@@ -19,7 +19,7 @@ pub async fn plot() -> Plot {
                     format!(
                         "{}",
                         Local
-                            .timestamp_millis_opt(kline.close_time as i64)
+                            .timestamp_millis_opt(kline.open_time as i64)
                             .unwrap()
                             .format("%Y-%m-%d %H:%M:%S")
                     ),
