@@ -1,71 +1,27 @@
+mod plot;
 mod prices;
 
-use chrono::prelude::*;
-use itertools::Itertools;
-use plotly::configuration::DisplayModeBar;
-use plotly::layout::{Axis, RangeSlider};
-use plotly::{Candlestick, Configuration, Layout, Plot};
-use std::path::PathBuf;
-
-fn plot(path: PathBuf) {
-    let kline_data = prices::get_kline();
-
-    let (open, close, high, low, x): (Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>, Vec<String>) =
-        kline_data
-            .iter()
-            .map(|kline| {
-                (
-                    kline.open.parse::<f64>().unwrap(),
-                    kline.close.parse::<f64>().unwrap(),
-                    kline.high.parse::<f64>().unwrap(),
-                    kline.low.parse::<f64>().unwrap(),
-                    format!(
-                        "{}",
-                        Local
-                            .timestamp_millis_opt(kline.close_time as i64)
-                            .unwrap()
-                            .format("%Y-%m-%d %H:%M:%S")
-                    ),
-                )
-            })
-            .multiunzip();
-
-    let latest = *close.last().unwrap();
-    let first = *open.first().unwrap();
-    let change = latest / first - 1.0;
-
-    let trace = Candlestick::new(x, open, high, low, close);
-
-    let mut plot = Plot::new();
-    plot.add_trace(trace);
-    let layout = Layout::new()
-        .title(
-            format!(
-                "<b>BTC   {:.2}   {}{:.2}%</b>",
-                latest,
-                if change.is_sign_positive() { "+" } else { "-" },
-                change * 100.0
-            )
-            .as_str()
-            .into(),
-        )
-        .hover_mode(plotly::layout::HoverMode::X)
-        .x_axis(Axis::new().range_slider(RangeSlider::new().visible(false)))
-        .y_axis(Axis::new().tick_format(".2f"));
-    plot.set_layout(layout);
-    plot.set_configuration(
-        Configuration::new()
-            .display_mode_bar(DisplayModeBar::False)
-            .responsive(true)
-            .fill_frame(true),
-    );
-
-    plot.use_local_plotly();
-    plot.write_html(path);
-}
+use wasm_bindgen_futures::spawn_local;
 
 fn main() -> std::io::Result<()> {
-    let path = std::env::args().last().unwrap();
-    plot(path.into());
+    spawn_local(async {
+        let window = web_sys::window().expect("no global `window` exists");
+        let document = window.document().expect("should have a document on window");
+        let body = document.body().expect("document should have a body");
+
+        let node = document.create_element("div").unwrap();
+
+        let plot = plot::plot().await;
+
+        node.set_inner_html(&plot.to_inline_html(None));
+        body.append_child(node.as_ref()).unwrap();
+        let script = node
+            .get_elements_by_tag_name("script")
+            .item(0)
+            .unwrap()
+            .inner_html();
+        js_sys::eval(&script).unwrap();
+    });
+
     Ok(())
 }

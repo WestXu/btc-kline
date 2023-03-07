@@ -1,12 +1,12 @@
 use serde::Deserialize;
 
-pub fn get_kline() -> Vec<Kline> {
-    reqwest::blocking::get(
-        "https://api.binance.com/api/v3/uiKlines?symbol=BTCUSDT&interval=15m&limit=96",
-    )
-    .unwrap()
-    .json()
-    .unwrap()
+pub async fn get_kline() -> Vec<Kline> {
+    reqwest::get("https://api.binance.com/api/v3/uiKlines?symbol=BTCUSDT&interval=15m&limit=96")
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap()
 }
 
 #[derive(Debug, Deserialize)]

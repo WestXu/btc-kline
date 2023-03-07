@@ -7,7 +7,19 @@ edition = "2021"
 
 [dependencies]
 plotly = "*"
-reqwest = { version = "*", features = ["blocking", "json"] }
+reqwest = { version = "*", features = ["json"] }
 serde = { version = "*", features = ["derive"] }
 itertools = "*"
 chrono = "*"
+wasm-bindgen = "*"
+web-sys = { version = "*", features = [
+    "Window",
+    "Document",
+    "Document",
+    "HtmlElement",
+    "HtmlCollection",
+] }
+js-sys = "*"
+getrandom = { version = "*", features = ["js"] }
+num-traits = { version = "*", features = ["i128"] }
+wasm-bindgen-futures = "*"
