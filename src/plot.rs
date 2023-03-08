@@ -4,6 +4,7 @@ use plotly::configuration::DisplayModeBar;
 use plotly::layout::{Axis, RangeSlider};
 use plotly::{Candlestick, Configuration, Layout, Plot};
 
+use crate::fitting::best_fit;
 use crate::prices::Kline;
 
 pub async fn plot(kline_data: &Vec<Kline>) -> Plot {
@@ -31,10 +32,15 @@ pub async fn plot(kline_data: &Vec<Kline>) -> Plot {
     let first = *open.first().unwrap();
     let change = latest / first - 1.0;
 
-    let trace = Candlestick::new(x, open, high, low, close);
+    let fit_trace = best_fit(&close);
+
+    let trace = Candlestick::new(x.clone(), open, high, low, close);
+    let fit_trace = plotly::Scatter::new(x, fit_trace)
+        .line(plotly::common::Line::new().dash(plotly::common::DashType::Dash));
 
     let mut plot = Plot::new();
     plot.add_trace(trace);
+    plot.add_trace(fit_trace);
     let layout = Layout::new()
         .title(
             format!(
@@ -47,6 +53,7 @@ pub async fn plot(kline_data: &Vec<Kline>) -> Plot {
             .into(),
         )
         .hover_mode(plotly::layout::HoverMode::X)
+        .show_legend(false)
         .x_axis(Axis::new().range_slider(RangeSlider::new().visible(false)))
         .y_axis(Axis::new().tick_format(".2f"));
     plot.set_layout(layout);

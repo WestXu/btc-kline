@@ -1,3 +1,4 @@
+mod fitting;
 mod plot;
 mod prices;
 
@@ -16,6 +17,8 @@ async fn sleep(delay: i32) {
 }
 
 fn main() -> std::io::Result<()> {
+    console_error_panic_hook::set_once();
+
     spawn_local(async {
         let window = web_sys::window().expect("no global `window` exists");
         let document = window.document().expect("should have a document on window");

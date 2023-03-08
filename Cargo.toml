@@ -18,8 +18,11 @@ web-sys = { version = "*", features = [
     "Document",
     "HtmlElement",
     "HtmlCollection",
+    "console",
 ] }
 js-sys = "*"
 getrandom = { version = "*", features = ["js"] }
 num-traits = { version = "*", features = ["i128"] }
 wasm-bindgen-futures = "*"
+polyfit-rs = "*"
+console_error_panic_hook = "*"
