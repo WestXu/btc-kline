@@ -24,8 +24,10 @@ fn main() -> std::io::Result<()> {
         let node = document.create_element("div").unwrap();
         body.append_child(node.as_ref()).unwrap();
 
+        let mut prices = prices::Prices::new().await;
+
         loop {
-            let plot = plot::plot().await;
+            let plot = plot::plot(&prices.data).await;
             node.set_inner_html(&plot.to_inline_html(None));
 
             let script = node
@@ -36,6 +38,7 @@ fn main() -> std::io::Result<()> {
             js_sys::eval(&script).unwrap();
 
             sleep(1000).await;
+            prices.update().await;
         }
     });
 

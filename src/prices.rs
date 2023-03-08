@@ -1,12 +1,43 @@
 use serde::Deserialize;
 
-pub async fn get_kline() -> Vec<Kline> {
-    reqwest::get("https://api.binance.com/api/v3/uiKlines?symbol=BTCUSDT&interval=15m&limit=96")
-        .await
-        .unwrap()
-        .json()
-        .await
-        .unwrap()
+pub struct Prices {
+    sns: reqwest::Client,
+    pub data: Vec<Kline>,
+}
+impl Prices {
+    pub async fn new() -> Self {
+        let sns = reqwest::Client::new();
+        let data = sns
+            .get("https://api.binance.com/api/v3/uiKlines?symbol=BTCUSDT&interval=1s&limit=120")
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        Self { sns, data }
+    }
+    pub async fn update(&mut self) {
+        let new_data = self
+            .sns
+            .get("https://api.binance.com/api/v3/uiKlines?symbol=BTCUSDT&interval=1s&limit=3")
+            .send()
+            .await
+            .unwrap()
+            .json::<Vec<Kline>>()
+            .await
+            .unwrap();
+        let new_data_open_time = new_data[0].open_time;
+
+        let data = std::mem::replace(&mut self.data, vec![]);
+        self.data = data
+            .into_iter()
+            .filter(|kline| kline.open_time < new_data_open_time)
+            .chain(new_data.into_iter())
+            .collect();
+
+        self.data = self.data.split_off(self.data.len() - 120);
+    }
 }
 
 #[derive(Debug, Deserialize)]

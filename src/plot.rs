@@ -4,9 +4,9 @@ use plotly::configuration::DisplayModeBar;
 use plotly::layout::{Axis, RangeSlider};
 use plotly::{Candlestick, Configuration, Layout, Plot};
 
-pub async fn plot() -> Plot {
-    let kline_data = super::prices::get_kline().await;
+use crate::prices::Kline;
 
+pub async fn plot(kline_data: &Vec<Kline>) -> Plot {
     let (open, close, high, low, x): (Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>, Vec<String>) =
         kline_data
             .iter()
