@@ -34,7 +34,9 @@ pub async fn plot(kline_data: &Vec<Kline>, dark: bool) -> Plot {
 
     let fit_trace = best_fit(&close);
 
-    let trace = Candlestick::new(x.clone(), open, high, low, close).name("Kline");
+    let trace = Candlestick::new(x.clone(), open, high, low, close)
+        .opacity(0.8)
+        .name("Kline");
     let fit_trace = plotly::Scatter::new(x, fit_trace)
         .line(plotly::common::Line::new().dash(plotly::common::DashType::Dash))
         .name("PolyFit");
