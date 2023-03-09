@@ -7,7 +7,7 @@ use plotly::{Candlestick, Configuration, Layout, Plot};
 use crate::fitting::best_fit;
 use crate::prices::Kline;
 
-pub async fn plot(kline_data: &Vec<Kline>) -> Plot {
+pub async fn plot(kline_data: &Vec<Kline>, dark: bool) -> Plot {
     let (open, close, high, low, x): (Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>, Vec<String>) =
         kline_data
             .iter()
@@ -54,6 +54,11 @@ pub async fn plot(kline_data: &Vec<Kline>) -> Plot {
         )
         .hover_mode(plotly::layout::HoverMode::X)
         .show_legend(false)
+        .template(if dark {
+            plotly::layout::themes::PLOTLY_DARK.clone()
+        } else {
+            plotly::layout::themes::DEFAULT.clone()
+        })
         .x_axis(Axis::new().range_slider(RangeSlider::new().visible(false)))
         .y_axis(Axis::new().tick_format(".2f"));
     plot.set_layout(layout);

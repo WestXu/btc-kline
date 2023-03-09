@@ -2,6 +2,7 @@ mod fitting;
 mod plot;
 mod prices;
 
+use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
 
 async fn sleep(delay: i32) {
@@ -30,7 +31,15 @@ fn main() -> std::io::Result<()> {
         let mut prices = prices::Prices::new().await;
 
         loop {
-            let plot = plot::plot(&prices.data).await;
+            let dark = match window.match_media("(prefers-color-scheme: dark)") {
+                Ok(Some(media)) => media.matches(),
+                _ => false,
+            };
+            body.clone()
+                .dyn_into::<web_sys::HtmlBodyElement>()
+                .unwrap()
+                .set_bg_color(if dark { "#000" } else { "#fff" });
+            let plot = plot::plot(&prices.data, dark).await;
             node.set_inner_html(&plot.to_inline_html(None));
 
             let script = node
