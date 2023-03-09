@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use ndarray::Array1;
 use polyfit_residuals::try_fit_poly;
 use web_sys::console;
@@ -31,8 +32,6 @@ fn rolling_mean(data: &[f64], window_size: usize) -> Vec<f64> {
 }
 
 pub fn best_fit(ys: &Vec<f64>) -> Vec<f64> {
-    let mut degree = ys.len() / 10;
-
     let y_roll_mean = rolling_mean(&ys, ys.len() / 30);
 
     let rolling_error = y_roll_mean
@@ -44,27 +43,33 @@ pub fn best_fit(ys: &Vec<f64>) -> Vec<f64> {
 
     console::log_1(&format!("rolling_error: {rolling_error}").into());
 
-    let mut record_fitted_error = f64::MAX;
-    let mut record_fitted = Vec::new();
-    loop {
-        let fitted = fit(ys, degree);
+    (ys.len() / 10..100)
+        .map(|degree| {
+            let fitted = fit(ys, degree);
 
-        let fitted_error = ys
-            .iter()
-            .zip(fitted.iter())
-            .map(|(y, f)| (y - f).powi(2))
-            .sum::<f64>()
-            / ys.len() as f64;
+            let fitted_error = ys
+                .iter()
+                .zip(fitted.iter())
+                .map(|(y, f)| (y - f).powi(2))
+                .sum::<f64>()
+                / ys.len() as f64;
 
-        console::log_1(&format!("degree: {degree}, fitted_error: {fitted_error}").into());
-        if fitted_error > record_fitted_error {
-            return record_fitted;
-        }
-        if fitted_error < 0.6 * rolling_error || degree >= 100 {
-            return fitted;
-        }
-        degree += 1;
-        record_fitted_error = fitted_error;
-        record_fitted = fitted;
-    }
+            console::log_1(&format!("degree: {degree}, fitted_error: {fitted_error}").into());
+            (degree, fitted, fitted_error)
+        })
+        .tuple_windows()
+        .find_map(
+            |((degree, fitted, fitted_error), (next_degree, next_fitted, next_fitted_error))| {
+                if fitted_error < next_fitted_error {
+                    console::log_1(&format!("best_degree: {degree}").into());
+                    Some(fitted)
+                } else if next_fitted_error < 0.6 * rolling_error || next_degree >= 100 {
+                    console::log_1(&format!("best_degree: {next_degree}").into());
+                    Some(next_fitted)
+                } else {
+                    None
+                }
+            },
+        )
+        .unwrap()
 }
