@@ -20,21 +20,20 @@ impl Prices {
     pub async fn update(&mut self) {
         let new_data = self
             .sns
-            .get("https://api.binance.com/api/v3/uiKlines?symbol=BTCUSDT&interval=1s&limit=3")
+            .get(format!(
+                "https://api.binance.com/api/v3/uiKlines?symbol=BTCUSDT&interval=1s&startTime={}",
+                self.data.last().unwrap().open_time
+            ))
             .send()
             .await
             .unwrap()
             .json::<Vec<Kline>>()
             .await
             .unwrap();
-        let new_data_open_time = new_data[0].open_time;
 
-        let data = std::mem::replace(&mut self.data, vec![]);
-        self.data = data
-            .into_iter()
-            .filter(|kline| kline.open_time < new_data_open_time)
-            .chain(new_data.into_iter())
-            .collect();
+        let mut data = std::mem::replace(&mut self.data, vec![]);
+        data.pop();
+        self.data = data.into_iter().chain(new_data.into_iter()).collect();
 
         self.data = self.data.split_off(self.data.len() - 120);
     }
