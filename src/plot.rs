@@ -32,18 +32,35 @@ pub async fn plot(kline_data: &Vec<Kline>, dark: bool) -> Plot {
     let first = *open.first().unwrap();
     let change = latest / first - 1.0;
 
-    let fit_trace = best_fit(&close);
+    let fitted = best_fit(&close);
 
     let trace = Candlestick::new(x.clone(), open, high, low, close)
         .opacity(0.8)
         .name("Kline");
-    let fit_trace = plotly::Scatter::new(x, fit_trace)
+    let fit_trace = plotly::Scatter::new(x.clone(), fitted.fitted.clone())
         .line(plotly::common::Line::new().dash(plotly::common::DashType::Dash))
         .name("PolyFit");
+
+    let extreams_xs = fitted
+        .max_extreams
+        .iter()
+        .map(|(x, _)| x)
+        .chain(fitted.min_extreams.iter().map(|(x, _)| x))
+        .cloned()
+        .collect::<Vec<f64>>();
+    let extreams_ys = extreams_xs
+        .iter()
+        .map(|x| fitted.fitted[x.round() as usize])
+        .collect::<Vec<f64>>();
+    let extreams_trace = plotly::Scatter::new(extreams_xs, extreams_ys)
+        .mode(plotly::common::Mode::Markers)
+        .marker(plotly::common::Marker::new().size(10).color("red"))
+        .name("Extreams");
 
     let mut plot = Plot::new();
     plot.add_trace(Box::new(trace));
     plot.add_trace(fit_trace);
+    plot.add_trace(extreams_trace);
     let layout = Layout::new()
         .title(
             format!(
