@@ -1,19 +1,14 @@
-use polyfit_rs::polyfit_rs::polyfit;
+use ndarray::Array1;
+use polyfit_residuals::try_fit_poly;
 use web_sys::console;
 
 fn fit(ys: &Vec<f64>, degree: usize) -> Vec<f64> {
-    let xs = (0..ys.len()).map(|x| x as f64).collect::<Vec<f64>>();
-    let fitted_parameters = polyfit(&xs, ys, degree).unwrap();
+    let xs = (0..ys.len()).map(|x| x as f64).collect::<Array1<f64>>();
 
-    xs.iter()
-        .map(|x| {
-            fitted_parameters
-                .iter()
-                .enumerate()
-                .map(|(i, p)| p * x.powi(i as i32))
-                .sum()
-        })
-        .collect::<Vec<f64>>()
+    let poly = try_fit_poly(xs.view(), Array1::from_vec(ys.clone()).view(), degree)
+        .expect("Failed to fit polynomial to data");
+
+    xs.iter().map(|x| poly.left_eval(*x)).collect::<Vec<f64>>()
 }
 
 // by ChatGPT
@@ -36,7 +31,7 @@ fn rolling_mean(data: &[f64], window_size: usize) -> Vec<f64> {
 }
 
 pub fn best_fit(ys: &Vec<f64>) -> Vec<f64> {
-    let mut degree = ys.len() / 40;
+    let mut degree = ys.len() / 10;
 
     let y_roll_mean = rolling_mean(&ys, ys.len() / 30);
 
@@ -49,6 +44,8 @@ pub fn best_fit(ys: &Vec<f64>) -> Vec<f64> {
 
     console::log_1(&format!("rolling_error: {rolling_error}").into());
 
+    let mut record_fitted_error = f64::MAX;
+    let mut record_fitted = Vec::new();
     loop {
         let fitted = fit(ys, degree);
 
@@ -60,9 +57,14 @@ pub fn best_fit(ys: &Vec<f64>) -> Vec<f64> {
             / ys.len() as f64;
 
         console::log_1(&format!("degree: {degree}, fitted_error: {fitted_error}").into());
-        if fitted_error < 0.6 * rolling_error || degree >= 6 {
+        if fitted_error > record_fitted_error {
+            return record_fitted;
+        }
+        if fitted_error < 0.6 * rolling_error || degree >= 100 {
             return fitted;
         }
         degree += 1;
+        record_fitted_error = fitted_error;
+        record_fitted = fitted;
     }
 }
